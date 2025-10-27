@@ -7,22 +7,15 @@ import { getStorage, FirebaseStorage } from "firebase/storage";
 // IMPORTANT: These values should be stored in environment variables and not hardcoded.
 // e.g., in a .env file that is included in your .gitignore
 const firebaseConfig = {
-
   apiKey: "AIzaSyDuQNWXDBfIWAYLpPEdKvWvuOWORi1tuH4",
-
   authDomain: "innovativegadget-ee6ce.firebaseapp.com",
-
   projectId: "innovativegadget-ee6ce",
-
   storageBucket: "innovativegadget-ee6ce.firebasestorage.app",
-
   messagingSenderId: "791003289853",
-
   appId: "1:791003289853:web:eb06460656ced51c4dc694",
-
   measurementId: "G-KZ25EET7T7"
-
 };
+
 
 
 // Initialize Firebase
