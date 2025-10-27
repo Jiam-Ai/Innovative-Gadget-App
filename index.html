@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Innovative Gadget Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      body {
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      .mobile-nav-enter { transform: translateX(-100%); }
+      .mobile-nav-enter-active { transform: translateX(0); transition: transform 300ms ease-out; }
+      .mobile-nav-exit { transform: translateX(0); }
+      .mobile-nav-exit-active { transform: translateX(-100%); transition: transform 300ms ease-in; }
+      
+      .filter-drawer-enter { transform: translateY(100%); }
+      .filter-drawer-enter-active { transform: translateY(0); transition: transform 300ms ease-out; }
+      .filter-drawer-exit { transform: translateY(0); }
+      .filter-drawer-exit-active { transform: translateY(100%); transition: transform 300ms ease-in; }
+
+      .backdrop-enter { opacity: 0; }
+      .backdrop-enter-active { opacity: 1; transition: opacity 300ms; }
+      .backdrop-exit { opacity: 1; }
+      .backdrop-exit-active { opacity: 0; transition: opacity 300ms; }
+
+      @keyframes pulse-badge {
+        0%, 100% {
+          transform: scale(1);
+          box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+        50% {
+          transform: scale(1.1);
+          box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+        }
+      }
+      .animate-pulse-badge {
+        animation: pulse-badge 2s infinite;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Poppins', 'sans-serif'],
+            },
+            colors: {
+              primary: '#5C2E91', // Purple from logo
+              secondary: '#84C424', // Green from logo
+              accent: '#FFFFFF',
+              lightgray: '#F3F4F6', // A slightly cooler light gray
+              "dark-bg": '#111827',
+              "dark-card": '#1F2937',
+            },
+            keyframes: {
+              'fade-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              'slide-up': {
+                '0%': { opacity: '0', transform: 'translateY(16px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'fade-in': 'fade-in 0.5s ease-in-out',
+              'slide-up': 'slide-up 0.5s ease-out forwards',
+            },
+          },
+        },
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.20.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "firebase/app": "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js",
+    "firebase/storage": "https://www.gstatic.com/firebasejs/9.23.0/firebase-storage.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

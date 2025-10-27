@@ -1,0 +1,7 @@
+{
+  "name": "Innovative Gadget Enterprise",
+  "description": "A modern e-commerce marketplace app for innovative gadgets and electronics, allowing users to buy and sell products online. It features multiple payment methods and language support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
