@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Header } from './components/Header';
 import { CategorySidebar } from './components/CategorySidebar';
@@ -23,6 +24,7 @@ import { PriceNegotiationModal } from './components/PriceNegotiationModal';
 import { VendorSpotlightModal } from './components/VendorSpotlightModal';
 import { VendorSpotlight } from './components/VendorSpotlight';
 import { ForYouTab } from './components/ForYouTab';
+import { GiftFinderModal } from './components/GiftFinderModal';
 
 // Page Components
 import { AboutUs } from './components/pages/AboutUs';
@@ -40,8 +42,8 @@ import { CheckoutPage } from './components/pages/CheckoutPage';
 
 import type { Product, CartItem, Language, Seller, Order, BuyerInfo, Review, View, ChatMessage, Buyer, Theme, OrderStatus } from './types';
 import { CATEGORIES, TRANSLATIONS, LOCAL_STORAGE_KEYS, SESSION_STORAGE_KEYS } from './constants';
-import { createChatSession, getPersonalizedRecommendations, processKrioVoiceCommand } from './services/geminiService';
-import { Chat, FunctionCall } from '@google/genai';
+import { getChatbotResponse, getPersonalizedRecommendations, processKrioVoiceCommand } from './services/geminiService';
+import { FunctionCall } from '@google/genai';
 
 export const AppContext = React.createContext<{
     language: Language;
@@ -95,7 +97,6 @@ const App: React.FC = () => {
     const [isChatbotOpen, setIsChatbotOpen] = useState(false);
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [isBotTyping, setIsBotTyping] = useState(false);
-    const [chatSession, setChatSession] = useState<Chat | null>(null);
 
     // Theme State
     const [theme, setTheme] = useState<Theme>('light');
@@ -117,6 +118,7 @@ const App: React.FC = () => {
     const [vendorSpotlightModal, setVendorSpotlightModal] = useState(false);
     const [activeShopTab, setActiveShopTab] = useState('all_products');
     const [forYouProducts, setForYouProducts] = useState<Product[] | null>(null);
+    const [isGiftFinderOpen, setIsGiftFinderOpen] = useState(false);
 
 
     useEffect(() => {
@@ -158,14 +160,7 @@ const App: React.FC = () => {
         }
         
         // Initialize Chatbot
-        try {
-            const session = createChatSession();
-            setChatSession(session);
-            setChatMessages([{ sender: 'bot', text: TRANSLATIONS[language].chatbot_greeting }]);
-        } catch (error) {
-            console.error("Failed to initialize chatbot:", error);
-            setChatMessages([{ sender: 'bot', text: TRANSLATIONS[language].chatbot_error }]);
-        }
+        setChatMessages([{ sender: 'bot', text: TRANSLATIONS[language].chatbot_greeting }]);
 
         // Initialize Theme
         const savedTheme = localStorage.getItem(LOCAL_STORAGE_KEYS.THEME) as Theme;
@@ -248,19 +243,17 @@ const App: React.FC = () => {
     };
     
     const handleSendChatMessage = async (message: string) => {
-        if (!chatSession || !message.trim()) return;
-
+        if (!message.trim()) return;
+    
         const userMessage: ChatMessage = { sender: 'user', text: message };
-        setChatMessages(prev => [...prev, userMessage]);
+        const newMessages = [...chatMessages, userMessage];
+        setChatMessages(newMessages);
         setIsBotTyping(true);
-
+    
         try {
-            const productContext = products.slice(0, 10).map(p => ({id: p.id, name: p.name, category: p.category})).toString();
-            const fullMessage = `${message}\n\nProduct Context: ${productContext}`;
-            
-            const response = await chatSession.sendMessage({ message: fullMessage });
-
-            const botMessage: ChatMessage = { sender: 'bot', text: response.text };
+            const botResponseText = await getChatbotResponse(newMessages, products);
+    
+            const botMessage: ChatMessage = { sender: 'bot', text: botResponseText };
             setChatMessages(prev => [...prev, botMessage]);
         } catch (error) {
             console.error("Chatbot error:", error);
@@ -641,9 +634,9 @@ const App: React.FC = () => {
     }, [currentSeller, updateSellerProfile]);
 
     const fetchForYouProducts = useCallback(async () => {
-        if (currentBuyer && currentBuyer.browsingHistory.length > 0) {
+        if (currentBuyer) {
             setForYouProducts(null); // Show loader
-            const ids = await getPersonalizedRecommendations(currentBuyer.browsingHistory, products);
+            const ids = await getPersonalizedRecommendations(currentBuyer, products);
             const recommendedProducts = products.filter(p => ids.includes(p.id));
             setForYouProducts(recommendedProducts);
         } else {
@@ -725,7 +718,6 @@ const App: React.FC = () => {
                                     />
                                 </div>
                                 <div className="lg:col-span-3">
-                                    <VendorAIAssistant />
                                     <VendorSpotlight />
 
                                     <div className="flex border-b-2 dark:border-gray-700 mb-6">
@@ -798,6 +790,7 @@ const App: React.FC = () => {
                     onVisualSearchClick={() => setIsVisualSearchOpen(true)}
                     onVoiceSearch={handleVoiceSearch}
                     allProducts={products}
+                    onGiftFinderClick={() => setIsGiftFinderOpen(true)}
                 />
                  <MobileNavMenu 
                     isOpen={isMobileNavOpen} 
@@ -857,6 +850,12 @@ const App: React.FC = () => {
                         onSelectRating={setSelectedRating}
                     />
                 </FilterDrawer>
+                <GiftFinderModal
+                    isOpen={isGiftFinderOpen}
+                    onClose={() => setIsGiftFinderOpen(false)}
+                    allProducts={products}
+                    onOpenProduct={handleOpenProductModal}
+                />
                 <ChatbotWidget onClick={() => setIsChatbotOpen(true)} />
                 <ChatbotModal
                     isOpen={isChatbotOpen}

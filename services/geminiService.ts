@@ -1,6 +1,6 @@
 import { GoogleGenAI, Type, Modality, FunctionDeclaration, GenerateContentResponse } from "@google/genai";
 // FIX: Import BuyerQuest type.
-import type { Product, Review, NegotiationMessage, Buyer, BuyerQuest } from '../types';
+import type { Product, Review, NegotiationMessage, Buyer, BuyerQuest, ChatMessage } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -274,21 +274,28 @@ export const generateVendorStory = async (storeName: string, bulletPoints: strin
     return response.text.trim();
 };
 
-export const getPersonalizedRecommendations = async (browsingHistory: number[], allProducts: Product[]): Promise<number[]> => {
-    if (!API_KEY || browsingHistory.length === 0) return [];
-    
-    const viewedProducts = allProducts.filter(p => browsingHistory.includes(p.id))
+export const getPersonalizedRecommendations = async (buyer: Buyer, allProducts: Product[]): Promise<number[]> => {
+    if (!API_KEY) return [];
+
+    const viewedProducts = allProducts.filter(p => buyer.browsingHistory.includes(p.id))
         .map(p => ({ id: p.id, name: p.name, category: p.category }));
-    
-    const productCatalog = allProducts.filter(p => !browsingHistory.includes(p.id))
-        .map(p => ({ id: p.id, name: p.name, category: p.category, description: p.description.substring(0, 100) }));
+
+    const productCatalog = allProducts.filter(p => !buyer.browsingHistory.includes(p.id))
+        .map(p => ({ id: p.id, name: p.name, category: p.category, price: p.price, description: p.description.substring(0, 100) }));
 
     const prompt = `You are a personalization engine for an e-commerce site.
-    Based on the user's browsing history, recommend up to 10 other products from the catalog that they would most likely be interested in.
-    Prioritize products in similar categories but also suggest complementary items.
+    Based on the user's browsing history (if available) and loyalty tier, recommend up to 10 other products from the catalog that they would most likely be interested in.
     
+    - For 'Gold' tier users, suggest premium, new arrivals, or higher-priced items.
+    - For 'Silver' tier users, suggest popular mid-range items and best-sellers.
+    - For 'Bronze' tier users, focus on value, deals, and items related to their history.
+
+    If browsing history is empty, recommend popular products based on their loyalty tier. Otherwise, prioritize products in similar categories to their history but also suggest complementary items.
+
+    User Loyalty Tier: ${buyer.loyalty?.tier || 'Bronze'}
+
     User Browsing History:
-    ${JSON.stringify(viewedProducts)}
+    ${buyer.browsingHistory.length > 0 ? JSON.stringify(viewedProducts) : "No browsing history available."}
     
     Full Product Catalog (for recommendations):
     ${JSON.stringify(productCatalog)}
@@ -413,12 +420,13 @@ export const generateNewQuests = async (buyer: Buyer): Promise<BuyerQuest[]> => 
     }
 };
 
+export const getChatbotResponse = async (history: ChatMessage[], products: Product[]): Promise<string> => {
+    if (!API_KEY) {
+        return "AI service is currently unavailable.";
+    }
 
-export const createChatSession = () => {
     const systemInstruction = `You are a friendly, witty, and extremely helpful personal shopping assistant for Innovative Gadget, an e-commerce marketplace.
-    
     Your goal is to help users discover products and have a delightful shopping experience. You are a fashion and tech expert.
-    
     Your instructions:
     - Be conversational and engaging.
     - Proactively ask questions to understand the user's needs. E.g., "What's the occasion?", "What's your budget?".
@@ -429,11 +437,127 @@ export const createChatSession = () => {
         - **Return Policy**: We have a 7-day return policy for unused items in original packaging.
     - If you cannot answer, politely say: "That's a bit outside my expertise, but our human support team can help! You can find a contact form in our Help Center."`;
 
-    return ai.chats.create({
-        model: 'gemini-2.5-flash',
-        config: {
-            systemInstruction,
-            temperature: 0.8,
-        },
-    });
+    const contents = history.map(m => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        parts: [{ text: m.text }]
+    }));
+
+    // Inject product context into the last user message
+    const lastMessage = contents[contents.length - 1];
+    if (lastMessage && lastMessage.role === 'user') {
+        const productContext = JSON.stringify(products.slice(0, 10).map(p => ({ id: p.id, name: p.name, category: p.category })));
+        lastMessage.parts[0].text = `${lastMessage.parts[0].text}\n\nProduct Context: ${productContext}`;
+    }
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents,
+            config: {
+                systemInstruction,
+                temperature: 0.8,
+            },
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating chatbot response:", error);
+        throw error;
+    }
+};
+
+
+export const generateComparisonSummary = async (products: Product[]): Promise<string> => {
+    if (!API_KEY || products.length < 2) return "Comparison requires at least two products.";
+
+    const productDetails = products.map(p => 
+        `- Name: ${p.name}\n` +
+        `  Category: ${p.category}\n` +
+        `  Price: SLL ${p.price}\n` +
+        `  Rating: ${p.rating}/5 from ${p.reviewsCount} reviews\n` +
+        `  Key Features: ${p.description.substring(0, 150)}...\n`
+    ).join('\n');
+
+    const prompt = `You are a helpful and witty e-commerce tech expert for "Innovative Gadget".
+    A customer is comparing the following products. Provide a concise summary that helps them decide.
+
+    Your analysis should:
+    1.  Start with a brief overview of the choice they are making.
+    2.  For each product, list 2-3 key "Pros" (what makes it stand out).
+    3.  Provide a final "Verdict" recommending which type of user might prefer each product.
+    
+    Keep the language clear, engaging, and easy to understand. Do not use markdown formatting. Use line breaks to structure your response.
+
+    Products to compare:
+    ${productDetails}
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { maxOutputTokens: 300 }
+        });
+        return response.text.trim();
+    } catch (error) {
+        console.error("Error generating comparison summary:", error);
+        return "Could not generate an AI summary at this time. Please try again later.";
+    }
+};
+
+export interface GiftFinderParams {
+    occasion: string;
+    recipient: string;
+    interests: string;
+    budget: string;
+}
+
+export const findGiftIdeas = async (params: GiftFinderParams, allProducts: Product[]): Promise<number[]> => {
+    if (!API_KEY) return [];
+    
+    const productCatalog = allProducts.map(p => ({ 
+        id: p.id, 
+        name: p.name, 
+        category: p.category, 
+        price: p.price, 
+        description: p.description.substring(0, 100) 
+    }));
+
+    const prompt = `You are a friendly and creative AI Gift Finder for "Innovative Gadget", an electronics and gadget store.
+    Based on the user's criteria, recommend up to 6 products from the provided catalog that would make excellent gifts.
+    
+    User's Criteria:
+    - Occasion: ${params.occasion}
+    - Gifting for: A ${params.recipient}
+    - Their interests: ${params.interests}
+    - Budget: ${params.budget}
+
+    Your task is to analyze the product catalog and select the most suitable gift ideas. Prioritize items that are popular, well-rated, and match the interests and budget.
+    
+    Product Catalog:
+    ${JSON.stringify(productCatalog)}
+    
+    Return a JSON object with a single key "recommended_ids", which is an array of product IDs. Do not recommend more than 6 products.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        recommended_ids: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                    },
+                    required: ['recommended_ids']
+                }
+            }
+        });
+        const result = JSON.parse(response.text.trim());
+        return result.recommended_ids || [];
+    } catch (error) {
+        console.error("Error finding gift ideas:", error);
+        return [];
+    }
 };

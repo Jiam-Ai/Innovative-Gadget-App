@@ -12,6 +12,7 @@ interface HeaderProps {
     onVisualSearchClick: () => void;
     onVoiceSearch: () => void;
     allProducts: Product[];
+    onGiftFinderClick: () => void;
 }
 
 const ThemeToggle: React.FC = () => {
@@ -117,7 +118,7 @@ const AISearchSuggestions: React.FC<{ query: string; onSelect: (term: string) =>
 };
 
 
-export const Header: React.FC<HeaderProps> = ({ onSearch, onCartClick, currentView, onMenuClick, onVisualSearchClick, onVoiceSearch, allProducts }) => {
+export const Header: React.FC<HeaderProps> = ({ onSearch, onCartClick, currentView, onMenuClick, onVisualSearchClick, onVoiceSearch, allProducts, onGiftFinderClick }) => {
     const context = useContext(AppContext);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
@@ -184,6 +185,13 @@ export const Header: React.FC<HeaderProps> = ({ onSearch, onCartClick, currentVi
                     </div>
                 )}
                 <div className="flex items-center space-x-2 sm:space-x-4">
+                     <button onClick={onGiftFinderClick} title={translations.gift_finder} className="hidden lg:flex items-center gap-2 text-accent dark:text-gray-200 hover:bg-white/20 dark:hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-semibold transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                           <path fillRule="evenodd" d="M5 5a3 3 0 013-3h8a3 3 0 013 3v8a3 3 0 01-3 3h-8a3 3 0 01-3-3V5zm3 0a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V6a1 1 0 00-1-1H8z" clipRule="evenodd" />
+                           <path d="M5 3a1 1 0 000 2v8a1 1 0 001 1h1V4a1 1 0 00-1-1H5zM3 5a1 1 0 00-1 1v8a1 1 0 001 1h8a1 1 0 001-1V6a1 1 0 00-1-1H3z" />
+                        </svg>
+                        <span>{translations.gift_finder}</span>
+                    </button>
                     <div className="hidden lg:flex items-center space-x-2 sm:space-x-4">
                         {currentSeller ? (
                              <div className="flex items-center space-x-2 sm:space-x-4">

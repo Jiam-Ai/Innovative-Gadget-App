@@ -6,7 +6,7 @@ interface ProductCardProps {
     product: Product;
     isSellerView?: boolean;
     onEdit?: (product: Product) => void;
-    onQuickView?: (product: Product) => void;
+    onClick?: (product: Product) => void;
     onUpdate?: (product: Product) => void;
 }
 
@@ -41,7 +41,7 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
     );
 };
 
-export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView = false, onEdit, onQuickView, onUpdate }) => {
+export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView = false, onEdit, onClick, onUpdate }) => {
     const context = useContext(AppContext);
     const [stockLevel, setStockLevel] = useState(product.stock ?? 0);
     const [updateSuccess, setUpdateSuccess] = useState(false);
@@ -64,8 +64,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView 
     
     const handleQuickViewClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (onQuickView) {
-            onQuickView(product);
+        if (onClick) {
+            onClick(product);
         }
     };
 
@@ -83,7 +83,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView 
     };
 
     return (
-        <div onClick={() => onQuickView?.(product)} className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden group flex flex-col relative cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-slide-up">
+        <div onClick={() => onClick?.(product)} className="bg-white dark:bg-dark-card rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden group flex flex-col relative cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-slide-up">
             {!isSellerView && (
                  <button
                     onClick={handleCompareClick}
@@ -124,8 +124,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView 
                      </div>
                  )}
             </div>
-            <div className="p-3 md:p-4 flex flex-col flex-grow">
-                <h3 className="text-sm md:text-base font-semibold text-gray-800 dark:text-gray-100 h-10 md:h-12 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{product.name}</h3>
+            <div className="p-3 flex flex-col flex-grow">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 h-10 [display:-webkit-box] [-webkit-line-clamp:2] [-webkit-box-orient:vertical] overflow-hidden">{product.name}</h3>
                 
                 {isLowStock && !isSellerView && (
                     <p className="text-xs font-semibold text-red-500 mt-1 animate-fade-in">🔥 Only {product.stock} left!</p>
@@ -135,11 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, isSellerView 
                     <div>
                         {onSale ? (
                             <>
-                                <span className="text-base md:text-lg font-bold text-red-600">SLL {formattedPrice}</span>
+                                <span className="text-base font-bold text-red-600">SLL {formattedPrice}</span>
                                 <span className="text-xs text-gray-400 line-through ml-1.5">SLL {formattedOriginalPrice}</span>
                             </>
                         ) : (
-                           <span className="text-base md:text-lg font-bold text-primary dark:text-blue-400">SLL {formattedPrice}</span>
+                           <span className="text-base font-bold text-primary dark:text-blue-400">SLL {formattedPrice}</span>
                         )}
                     </div>
                 </div>

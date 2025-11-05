@@ -2,7 +2,12 @@ import React, { useState, useContext } from 'react';
 import { AppContext } from '../App';
 import { generateProductDescription } from '../services/geminiService';
 
-export const VendorAIAssistant: React.FC = () => {
+interface VendorAIAssistantProps {
+    onDescriptionGenerated?: (description: string) => void;
+    isEmbedded?: boolean;
+}
+
+export const VendorAIAssistant: React.FC<VendorAIAssistantProps> = ({ onDescriptionGenerated, isEmbedded = false }) => {
     const context = useContext(AppContext);
     const [keywords, setKeywords] = useState('');
     const [description, setDescription] = useState('');
@@ -27,6 +32,9 @@ export const VendorAIAssistant: React.FC = () => {
                 setError(result)
             } else {
                 setDescription(result);
+                if (onDescriptionGenerated) {
+                    onDescriptionGenerated(result);
+                }
             }
         } catch (err) {
             setError('An error occurred. Please try again.');
@@ -45,13 +53,19 @@ export const VendorAIAssistant: React.FC = () => {
         }
     };
 
+    const wrapperClasses = isEmbedded 
+        ? "border dark:border-gray-600 p-4 rounded-lg" 
+        : "bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8";
+
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
-            <div className="flex items-center space-x-3 mb-4">
-                <span className="text-2xl" role="img" aria-label="sparkles">✨</span>
-                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{translations.vendor_ai_assistant}</h2>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">{translations.ai_description}</p>
+        <div className={wrapperClasses}>
+             {!isEmbedded && (
+                <div className="flex items-center space-x-3 mb-4">
+                    <span className="text-2xl" role="img" aria-label="sparkles">✨</span>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{translations.vendor_ai_assistant}</h2>
+                </div>
+            )}
+            <p className={`text-gray-600 dark:text-gray-300 mb-4 ${isEmbedded ? 'text-sm' : ''}`}>{translations.ai_description}</p>
             
             <div className="flex flex-col md:flex-row gap-2 mb-2">
                 <input
@@ -83,7 +97,7 @@ export const VendorAIAssistant: React.FC = () => {
             </div>
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             
-            {description && (
+            {description && !onDescriptionGenerated && (
                 <div className="mt-4 p-4 bg-lightgray dark:bg-gray-700 rounded-md relative group border dark:border-gray-600">
                     <p className="text-gray-700 dark:text-gray-200 whitespace-pre-wrap pr-10">{description}</p>
                     <button 

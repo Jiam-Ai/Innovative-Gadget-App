@@ -2,6 +2,7 @@ import React, { useState, useContext, useRef, useEffect } from 'react';
 import { AppContext } from '../App';
 import { CATEGORIES } from '../constants';
 import type { Product, Seller, Variant, VariantOption } from '../types';
+import { VendorAIAssistant } from './VendorAIAssistant';
 
 interface ProductFormProps {
     currentSeller: Seller;
@@ -48,6 +49,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ currentSeller, product
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleDescriptionGenerated = (description: string) => {
+        setFormData(prev => ({ ...prev, description }));
     };
     
     // --- Variant Handlers ---
@@ -155,7 +160,10 @@ export const ProductForm: React.FC<ProductFormProps> = ({ currentSeller, product
             <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{isEditMode ? 'Edit Product' : translations.add_new_product}</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
                 <input type="text" name="name" placeholder={translations.product_name} value={formData.name} onChange={handleInputChange} required className={inputClasses} />
-                <textarea name="description" rows={3} placeholder={translations.product_description} value={formData.description} onChange={handleInputChange} required className={inputClasses}></textarea>
+                <div>
+                    <textarea name="description" rows={3} placeholder={translations.product_description} value={formData.description} onChange={handleInputChange} required className={inputClasses}></textarea>
+                    <VendorAIAssistant onDescriptionGenerated={handleDescriptionGenerated} isEmbedded={true} />
+                </div>
                 <input type="number" name="price" placeholder={`${translations.product_price} (Base)`} value={formData.price} onChange={handleInputChange} required min="1" className={inputClasses} />
                 <select name="category" value={formData.category} onChange={handleInputChange} className={inputClasses}>
                     {availableCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}

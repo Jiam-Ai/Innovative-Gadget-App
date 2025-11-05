@@ -14,7 +14,7 @@ const firebaseConfig = {
 
   projectId: "innovativegadget-ee6ce",
 
-  storageBucket: "innovativegadget-ee6ce.firebasestorage.app",
+  storageBucket: "innovativegadget-ee6ce.appspot.com",
 
   messagingSenderId: "791003289853",
 

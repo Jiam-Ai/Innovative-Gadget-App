@@ -1,6 +1,7 @@
-import React, { useContext, useId } from 'react';
+import React, { useContext, useId, useState, useEffect } from 'react';
 import { AppContext } from '../App';
 import type { Product } from '../types';
+import { generateComparisonSummary } from '../services/geminiService';
 
 interface ComparisonModalProps {
     isOpen: boolean;
@@ -37,9 +38,34 @@ const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
 
 export const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClose }) => {
     const context = useContext(AppContext);
+    const [summary, setSummary] = useState('');
+    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+
     if (!context) return null;
 
     const { translations, comparisonList, toggleCompare, addToCart } = context;
+    const productIds = comparisonList.map(p => p.id).join(',');
+
+    useEffect(() => {
+        const fetchSummary = async () => {
+            if (isOpen && comparisonList.length >= 2) {
+                setIsSummaryLoading(true);
+                setSummary('');
+                try {
+                    const result = await generateComparisonSummary(comparisonList);
+                    setSummary(result);
+                } catch (error) {
+                    console.error(error);
+                    setSummary('Failed to load summary.');
+                } finally {
+                    setIsSummaryLoading(false);
+                }
+            }
+        };
+
+        fetchSummary();
+    }, [isOpen, productIds]);
+
 
     if (!isOpen) return null;
 
@@ -72,46 +98,68 @@ export const ComparisonModal: React.FC<ComparisonModalProps> = ({ isOpen, onClos
                     {comparisonList.length === 0 ? (
                         <p className="text-center text-gray-500 dark:text-gray-400 py-8">Add products to compare them.</p>
                     ) : (
-                        <div className={`grid gap-x-6 items-start`} style={{ gridTemplateColumns: `minmax(120px, auto) repeat(${comparisonList.length}, minmax(200px, 1fr))` }}>
-                           {/* Header Row */}
-                           <div className="font-bold text-lg text-gray-700 dark:text-gray-200 sticky top-0 bg-white dark:bg-gray-800 py-4 invisible">Feature</div>
-                           {comparisonList.map(product => (
-                               <div key={product.id} className="text-center sticky top-0 bg-white dark:bg-gray-800 py-4">
-                                    <button onClick={() => toggleCompare(product)} title={translations.remove} className="absolute top-2 right-0 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">
-                                        &#x2715;
-                                    </button>
-                                    <img src={product.images[0]} alt={product.name} className="w-full h-32 object-contain rounded-md mb-2 mx-auto"/>
-                                    <h3 className="font-semibold text-gray-800 dark:text-gray-100">{product.name}</h3>
-                               </div>
-                           ))}
+                        <>
+                            {comparisonList.length >= 2 && (
+                                <div className="p-4 mb-6 bg-lightgray dark:bg-gray-700/50 rounded-lg">
+                                    <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2 flex items-center gap-2">
+                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                                            <path d="M10 2a6 6 0 00-6 6c0 1.887-.454 3.665-1.257 5.234a.75.75 0 00.515 1.076 32.91 32.91 0 0013.484 0 .75.75 0 00.515-1.076A11.948 11.948 0 0116 8a6 6 0 00-6-6zM8.5 16.5a1.5 1.5 0 103 0h-3z" />
+                                        </svg>
+                                        {translations.ai_expert_analysis}
+                                    </h3>
+                                    {isSummaryLoading ? (
+                                        <div className="space-y-3 animate-pulse pt-2">
+                                            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+                                            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-full"></div>
+                                            <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-5/6"></div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{summary}</p>
+                                    )}
+                                </div>
+                            )}
 
-                           {/* Feature Rows */}
-                           {features.map(feature => (
-                               <React.Fragment key={feature.label}>
-                                   <div className="font-bold text-gray-700 dark:text-gray-200 py-4 border-t dark:border-gray-700">{feature.label}</div>
-                                   {comparisonList.map(product => (
-                                       <div key={product.id} className="py-4 border-t dark:border-gray-700 text-center flex items-center justify-center text-gray-600 dark:text-gray-300">
-                                          {feature.render(product)}
-                                       </div>
-                                   ))}
-                               </React.Fragment>
-                           ))}
-                           
-                           {/* Action Row */}
-                           <div className="py-4 border-t dark:border-gray-700 invisible">Actions</div>
-                           {comparisonList.map(product => (
-                               <div key={product.id} className="py-4 border-t dark:border-gray-700 text-center">
-                                    <button
-                                        onClick={() => addToCart(product)}
-                                        disabled={product.stock === 0}
-                                        className="w-full bg-secondary text-white py-2 px-4 rounded-md font-semibold text-sm hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                    >
-                                        {translations.add_to_cart}
-                                    </button>
-                               </div>
-                           ))}
+                            <div className={`grid gap-x-6 items-start`} style={{ gridTemplateColumns: `minmax(120px, auto) repeat(${comparisonList.length}, minmax(200px, 1fr))` }}>
+                               {/* Header Row */}
+                               <div className="font-bold text-lg text-gray-700 dark:text-gray-200 sticky top-0 bg-white dark:bg-gray-800 py-4 invisible">Feature</div>
+                               {comparisonList.map(product => (
+                                   <div key={product.id} className="text-center sticky top-0 bg-white dark:bg-gray-800 py-4">
+                                        <button onClick={() => toggleCompare(product)} title={translations.remove} className="absolute top-2 right-0 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-red-500 hover:text-white w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors">
+                                            &#x2715;
+                                        </button>
+                                        <img src={product.images[0]} alt={product.name} className="w-full h-32 object-contain rounded-md mb-2 mx-auto"/>
+                                        <h3 className="font-semibold text-gray-800 dark:text-gray-100">{product.name}</h3>
+                                   </div>
+                               ))}
 
-                        </div>
+                               {/* Feature Rows */}
+                               {features.map(feature => (
+                                   <React.Fragment key={feature.label}>
+                                       <div className="font-bold text-gray-700 dark:text-gray-200 py-4 border-t dark:border-gray-700">{feature.label}</div>
+                                       {comparisonList.map(product => (
+                                           <div key={product.id} className="py-4 border-t dark:border-gray-700 text-center flex items-center justify-center text-gray-600 dark:text-gray-300">
+                                              {feature.render(product)}
+                                           </div>
+                                       ))}
+                                   </React.Fragment>
+                               ))}
+                               
+                               {/* Action Row */}
+                               <div className="py-4 border-t dark:border-gray-700 invisible">Actions</div>
+                               {comparisonList.map(product => (
+                                   <div key={product.id} className="py-4 border-t dark:border-gray-700 text-center">
+                                        <button
+                                            onClick={() => addToCart(product)}
+                                            disabled={product.stock === 0}
+                                            className="w-full bg-secondary text-white py-2 px-4 rounded-md font-semibold text-sm hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                        >
+                                            {translations.add_to_cart}
+                                        </button>
+                                   </div>
+                               ))}
+
+                            </div>
+                        </>
                     )}
                 </div>
 

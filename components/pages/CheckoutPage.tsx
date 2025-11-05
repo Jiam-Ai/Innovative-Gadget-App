@@ -188,11 +188,21 @@ export const CheckoutPage: React.FC = () => {
         e.preventDefault();
         
         const isMobileMoney = ['orange', 'afri_money'].includes(selectedPayment);
-        if (isMobileMoney && !/^\d{9,10}$/.test(mobileMoneyNumber.trim())) {
-             alert('Please enter a valid mobile money phone number.');
+        if (isMobileMoney && !/^\d{8,10}$/.test(mobileMoneyNumber.trim())) {
+             alert('Please enter a valid mobile money phone number (e.g., 077123456).');
              return;
         }
         
+        // --- REAL-WORLD SCENARIO ---
+        // 1. Show a loading spinner.
+        // 2. Call your backend server with order details and payment info (e.g., mobileMoneyNumber).
+        // 3. Your backend calls the Payment Service Provider (e.g., Paystack).
+        // 4. The PSP sends a push notification to the user's phone for PIN confirmation.
+        // 5. Your website waits for a confirmation signal from your backend (which gets it from the PSP).
+        // 6. Once confirmed, proceed to the success step.
+
+        // --- SIMULATION FOR THIS APP ---
+        // We will directly call placeOrder and simulate the success.
         const newOrder = placeOrder({
             fullName,
             phoneNumber,
@@ -266,7 +276,7 @@ export const CheckoutPage: React.FC = () => {
                         <div className="bg-white dark:bg-dark-card p-6 rounded-lg shadow-md animate-fade-in">
                              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">{translations.payment_method}</h2>
                              <form onSubmit={handlePlaceOrder} className="space-y-4">
-                                <div role="radiogroup" className="grid grid-cols-1 gap-4">
+                                <div role="radiogroup" className="flex flex-col gap-4">
                                    <PaymentOption id="cod" name={translations.cash_on_delivery} description={translations.payment_method_description_cod} icon="https://img.icons8.com/fluency/96/stack-of-money.png" selected={selectedPayment === 'cod'} onSelect={setSelectedPayment} />
                                    <PaymentOption id="orange" name={translations.orange_money} description={translations.payment_method_description_mobile} icon="https://seeklogo.com/images/O/orange-money-logo-8F2AED37F3-seeklogo.com.png" selected={selectedPayment === 'orange'} onSelect={setSelectedPayment} />
                                    <PaymentOption id="afri_money" name={translations.afri_money} description={translations.payment_method_description_mobile} icon="https://afrimoney.sl/wp-content/uploads/2022/04/Afrimoney-Logo-06-1-1024x262.png" selected={selectedPayment === 'afri_money'} onSelect={setSelectedPayment} />

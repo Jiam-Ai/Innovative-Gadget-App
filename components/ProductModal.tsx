@@ -252,7 +252,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({ isOpen, product, onC
                             <h3 className="text-xl font-bold mb-4 dark:text-gray-100">Related Products</h3>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                                 {relatedProducts.map(p => (
-                                    <ProductCard key={p.id} product={p} onQuickView={(prod) => { onClose(); setTimeout(() => contextValue.handleNavigation('shop', { productId: prod.id }), 100); }} />
+                                    <ProductCard key={p.id} product={p} onClick={(prod) => { onClose(); setTimeout(() => contextValue.handleNavigation('shop', { productId: prod.id }), 100); }} />
                                 ))}
                             </div>
                         </div>

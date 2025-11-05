@@ -16,10 +16,11 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({ isOpen, on
     const [generatedImage, setGeneratedImage] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [isAdded, setIsAdded] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     if (!context) return null;
-    const { translations } = context;
+    const { translations, addToCart } = context;
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -59,9 +60,17 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({ isOpen, on
         setGeneratedImage(null);
         setError('');
         setIsLoading(false);
+        setIsAdded(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
         onClose();
     }
+
+    const handleAddToCart = () => {
+        if (product) {
+            addToCart(product);
+            setIsAdded(true);
+        }
+    };
 
     if (!isOpen || !product) return null;
 
@@ -99,10 +108,23 @@ export const VirtualTryOnModal: React.FC<VirtualTryOnModalProps> = ({ isOpen, on
                 <button 
                     onClick={handleGenerate} 
                     disabled={!userImage || isLoading}
-                    className="w-full mt-6 bg-secondary text-white py-3 px-4 rounded-md font-semibold hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    className="w-full mt-6 bg-primary text-white py-3 px-4 rounded-md font-semibold hover:bg-blue-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                     {translations.generate_description}
                 </button>
+
+                {generatedImage && !isLoading && (
+                    <div className="mt-4 text-center">
+                        <button 
+                            onClick={handleAddToCart}
+                            disabled={isAdded}
+                            className="bg-secondary text-white py-2 px-6 rounded-md font-semibold hover:bg-green-700 transition-colors disabled:bg-green-300 dark:disabled:bg-green-800 disabled:cursor-not-allowed"
+                        >
+                            {isAdded ? 'Added to Cart!' : translations.add_to_cart}
+                        </button>
+                    </div>
+                )}
+                
                 {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
             </div>
         </div>
